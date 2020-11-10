@@ -1,0 +1,100 @@
+# THe general idea might work, but the file currently contains way too much and thus takes too long to give an answer (It currently doesnt)
+
+
+import numpy as np
+
+""" Loads """
+Pu = 10 #RANDOM VALUE, NOT ACTUAL VALUE!
+#Ra = axial component of Pu
+#Rtr = transverse component of Pu
+
+""" Material properties """
+Ftu = 483 * 10**6
+
+# """ Safety margin """
+# MS = 1/((Ra**1.6 + Rtr**1.6)**0.625)-1 
+# #so Ra**1.6 + Rtr**1.6 should equal 1
+
+tarr = np.arange(0.001, 2., 0.5)
+
+for tvalue in tarr:
+    while 0. <= tvalue:
+        
+        """ Method of 'Tension across the net section' """
+        D1tab = []
+        w1tab = []
+        X2 = 1.0
+
+        while 1.0 <= X2 <= 5.0:
+            a2 = (0.68 - 1.)/(5. - 1.) #curve 4 for current chosen material
+            b2 = 1. - a2*1.0
+            Kt = a2*X2 + b2
+            X2 = X2 + 0.5 #X2 = w/D
+            At = Pu/(Kt*Ftu) #At = (w-D)*t = A_2
+            f1 = At/tvalue #f1=w-D
+            D1 = X2/(f1-1)
+            w1 = D1 + f1
+            D1tab.append(D1)
+            w1tab.append(w1)
+
+        """ Method of 'Lug strength analysis under transverse loading' """
+        #curve 3 represents Kty for all aluminium and steel alloys
+        D2tab = []
+        w2tab = []
+        X1 = 0.001
+
+        while 0. <= X1 < 0.7:
+            a11 = (0.8-0.)/(0.7-0.)
+            b11 = 0
+            Kty = a11*X1 + b11
+            X1 = X1 + 0.5
+            Abr = Pu/(Kty*Ftu) #Abr=D*t
+            D2 = Abr/tvalue
+            Aav = Abr * X1
+            D2tab.append(D2)
+            wsearch = 0.
+            while 0. <= wsearch <= 10.:
+                A_1 = ((wsearch-D2)/2 + (D2/2)*(1- 2**-0.5))*tvalue
+                A_2 = (wsearch-D2)*tvalue
+                A_3 = 0.5*A_2
+                A_4 = A_1
+                Aav_test = 6/((3/A_1)+(1/A_2)+(1/A_3)+(1/A_4))
+                if -10**-5 <= Aav_test - Aav <= 10**-5:
+                    w2 = wsearch
+                    w2tab.append(w2)
+                    wsearch = 100 #falls outside the range of the while loop       
+
+        while 0.7 <= X1 <= 1.4:
+            a12 = (1.28-0.8)/(1.4-0.7)
+            b12 = 1.28 - a12*1.4
+            Kty = a12*X1 + b12
+            X1 = X1 + 0.5
+            Abr = Pu/(Kty*Ftu) #Abr=D*t
+            D2 = Abr/tvalue
+            Aav = Abr * X1
+            D2tab.append(D2)
+            wsearch = 0.
+            while 0. <= wsearch <= 10.:
+                A_1 = ((wsearch-D2)/2 + (D2/2)*(1- 2**-0.5))*tvalue
+                A_2 = (wsearch-D2)*tvalue
+                A_3 = 0.5*A_2
+                A_4 = A_1
+                Aav_test = 6/((3/A_1)+(1/A_2)+(1/A_3)+(1/A_4))
+                if -10**-5 <= Aav_test - Aav <= 10**-5:
+                    w2 = wsearch
+                    w2tab.append(w2)
+                    wsearch = 100 #falls outside the range of the while loop
+
+        for check1a in range(len(D1tab)):
+            D1 = D1tab[check1a]
+            w1 = w1tab[check1a]
+            for check1b in range(len(D2tab)):
+                D2 = D2tab[check1b]
+                w2 = w2tab[check1b]
+                if -10**-5 <= D1-D2 <= 10**-5 and -10**-5 <= w1-w2 <= 10**-5:
+                    D = D1
+                    w = w1
+                    t = tvalue
+                    tvalue = -1 #falls outside the range of the while loop
+                    print(D,w,t)
+            
