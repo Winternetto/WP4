@@ -1,0 +1,41 @@
+import numpy as np
+
+P_withoutMS = 1000 #RANDOMVALUE
+P = P_withoutMS *1.5
+sigma = 483 * 10**6
+
+""" arrays """
+Darray = np.arange(0.001,1.,0.005)
+warray = np.arange(0.001,1.,0.005)
+tarray = np.arange(0.001,1.,0.005)
+
+for w in warray:
+    for D in Darray:
+        if w > D:
+            for t in tarray:
+                """Area definitions"""
+                A1 = 0.5*(w-D)*t + D*t*0.5*(1 - 0.5 * 2**0.5)
+                A2 = (w-D)*t
+                A3 = 0.5*A2
+                A4 = A1
+                if A1 != 0 and A2 != 0 and A3 != 0 and A4 != 0:
+                    Aav = 6/((3/A1)+(1/A2)+(1/A3)+(1/A4))
+                    Abr = D*t
+
+                    """ P = K * Abr * sigma """
+                    Kformula = P/(Abr*sigma)
+
+                    """ reading the K values from the graph """
+                    #take curve 3
+                    #approximately linear from 0. to 0.7 and 0.7 to 1.4
+                    x = Aav/Abr
+                    #print(Aav,Abr,Kformula,x)
+                    if 0. <= x < 0.7:
+                        Kgraph = (0.8/0.7)*x
+                        if -10**-5 < Kformula - Kgraph < 10**-5:
+                            print(D,w,t)
+
+                    if 0.7 <= x <= 1.4:
+                        Kgraph = (0.48/0.7)*x + 0.32
+                        if -10**-5 < Kformula - Kgraph < 10**-5:
+                            print(D,w,t)
