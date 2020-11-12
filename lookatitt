@@ -1,0 +1,83 @@
+from sympy import Symbol
+from sympy.solvers import nsolve
+from sympy import *
+import numpy as np
+
+
+
+volume = [[],[],[],[],[]]
+
+F_tu = 483*10**6 
+F_ty = 345*10**6
+P_bry = 190.83/2 * 1.5 #N and P/2 + safety  
+P_ty = 572.51/2 * 1.5 #
+
+D = 0.01
+while D < 0.1:
+    C_1 = Symbol('C_1') # W/D
+    C_2 = Symbol('C_2') # t/D
+    t = C_2 * D
+    
+    #P_bry = K_bry * F_tu * D**2 * C_2
+    # e = w/2, K_bry is between 0 and 1.7 e/D  = 0.5 W/D = 0.5*C_1
+    
+    C2 = [0.6,0.4,0.3,0.2,0.15,0.12,0.10,0.08,0.06]
+    
+    x = 0.5*C_1
+    K_bry = [ -0.0019*x**6 + 0.0298*x**5 - 0.2081*x**4 + 0.8872*x**3 - 2.5001*x**2 + 4.3066*x - 1.6291,
+             0.0022*x**6 - 0.0287*x**5 + 0.1184*x**4 - 0.0005*x**3 - 1.3008*x**2 + 3.5552*x - 1.4597,
+ 0.0064*x**6 - 0.0843*x**5 + 0.3943*x**4 - 0.6405*x**3 - 0.6124*x**2 + 3.2344*x - 1.4084,
+ 0.0096*x**6 - 0.1252*x**5 + 0.5863*x**4 - 1.0248*x**3 - 0.3505*x**2 + 3.231*x - 1.4368,
+ 0.0037*x**6 - 0.0363*x**5 + 0.0566*x**4 + 0.5518*x**3 - 2.7462*x**2 + 4.863*x - 1.8221,
+-0.0042*x**6 + 0.0771*x**5 - 0.5801*x**4 + 2.3102*x**3 - 5.184*x**2 + 6.3579*x - 2.1416,
+-0.0046*x**6 + 0.0884*x**5 - 0.6834*x**4 + 2.715*x**3 - 5.922*x**2 + 6.9054*x - 2.2766,
+-0.0097*x**6 + 0.156*x**5 - 1.0272*x**4 + 3.5563*x**3 - 6.9083*x**2 + 7.3218*x - 2.3176,
+-0.0185*x**6 + 0.2872*x**5 - 1.7958*x**4 + 5.7956*x**3 - 10.217*x**2 + 9.4917*x - 2.8114]
+    
+    C1 = []
+    
+    for j in range(0,len(C2),1):
+        
+        K_bry_relation = P_bry - K_bry[j] *F_tu* D**2 *C2[j]
+        C1.append(nsolve(K_bry_relation, C_1, (1.0, )))
+
+    #P_ty = K_ty * A_br * F_ty 
+    w = C_1 * D
+    C11 = []
+    Volume = 1
+    C1_it = 0
+    C11_it = 0
+    C2_it = 0
+    
+    for i in range(0, len(C2), 1): 
+        t = C2[i] * D
+        A_1 = 0.5*(w-D)*t + D*t*0.5*(1 - 0.5 * 2**0.5)
+        A_2 = (w-D)*t
+        A_3 = 0.5*(w-D)*t
+        A_4 = A_1
+        # use yielding as the failure condition
+        Aav = 6/(3/A_1 + 1/A_2 + 1/A_3 + 1/A_4)
+        A_br = D * t
+        x = Aav/A_br
+        K_ty = -0.6427*x**6 + 2.2233*x**5 - 2.4225*x**4 + 0.6156*x**3 + 0.0264*x**2 + 1.2337*x - 0.0002
+        
+        K_ty_relation = P_ty - K_ty * A_br * F_ty 
+        C11.append(nsolve(K_ty_relation, C_1, (1.01, )))
+    
+        if  -0.001 < C11[i]-C1[i] < 0.001  :     
+            Volume1 = np.pi*((C1[i]*D)**2-D**2)*C2[i]*D
+            if Volume1 < Volume and C1[i]>1:
+                Volume = Volume1
+                C1_it = C1[i]
+                C11_it = C11[i]
+                C2_it = C2[i]
+                volume[0].append(Volume)
+                volume[1].append(C1_it*D)
+                volume[2].append(C11_it*D)
+                volume[3].append(C2_it*D)
+                volume[4].append(D)
+    D = D + 0.001
+
+index = volume[0].index(min(volume[0]))
+volume = np.array(volume)
+print(volume[:,index])
