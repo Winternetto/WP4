@@ -3,18 +3,19 @@ from sympy.solvers import nsolve
 from sympy import *
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
-volume = [[1000, 1, 1, 1, 1]]
-
+volume = [[1000,0,0,0,0]]
 volume = np.array(volume)
 F_tu = 400*10**6 #483*10**6 
 F_ty = 270*10**6 #345*10**6
-P_bry = 190.83/2 * 1.5 #N and P/2 + safety  
-P_ty = 572.51/2 * 1.5 #
+P_bry =  614/2 * 1.5   # 190.83/2 * 1.5 #N and P/2 + safety  
+P_ty =   1841/2 * 1.5 #572.51/2 * 1.5 #
 
-C2 = [0.6,0.4,0.3,0.2,0.15,0.12,0.10,0.08,0.06] #t/D
+C2 = np.array([0.6,0.4,0.3,0.2,0.15,0.12,0.10,0.08,0.06]) #t/D
 C_1 = Symbol('C_1') # W/D
 x = 0.5*C_1     # e = W/2, e/D  = 0.5 W/D = 0.5*C_1
+K = 1.1  #starts looking for values close to this for W/D = C1 = C11
 
 K_bry = [ -0.0019*x**6 + 0.0298*x**5 - 0.2081*x**4 + 0.8872*x**3 - 2.5001*x**2 + 4.3066*x - 1.6291,
           0.0022*x**6 - 0.0287*x**5 + 0.1184*x**4 - 0.0005*x**3 - 1.3008*x**2 + 3.5552*x - 1.4597,
@@ -27,19 +28,21 @@ K_bry = [ -0.0019*x**6 + 0.0298*x**5 - 0.2081*x**4 + 0.8872*x**3 - 2.5001*x**2 +
         -0.0185*x**6 + 0.2872*x**5 - 1.7958*x**4 + 5.7956*x**3 - 10.217*x**2 + 9.4917*x - 2.8114]
 
 D = 0.005
-while D < 0.015:
+step = 0.001
+while D < 0.04:
     #P_bry = K_bry * F_tu * ( A_br = D*t = D**2 * C_2 )  
     C1 = [] 
     for i in range(0,len(C2),1):       
         K_bry_relation = P_bry - K_bry[i]*F_tu* D**2 *C2[i]
-        C1.append(nsolve(K_bry_relation, C_1, (2, )))
+        C1.append(nsolve(K_bry_relation, C_1, (K, )))
 
     #P_ty = K_ty * A_br * F_ty 
     w = C_1 * D
     C11 = 0   
     for i in range(0, len(C2), 1): 
-        if C1[i]>1.0001: #W/D should be larger than 1
-            if C2[i] * D > 0.002: # t should be thicker than 1 mm?
+
+        if C1[i]>1: #W/D should be larger than 1
+            if C2[i] * D > 0.002: # t should be thicker than 2 mm
                 t = C2[i] * D
                 A_1 = 0.5*(w-D)*t + D*t*0.5*(1 - 0.5 * 2**0.5) # = (w-D*0.5*2**0.5)*t?
                 A_2 = (w-D)*t
@@ -52,14 +55,29 @@ while D < 0.015:
                 K_ty = -0.6427*x**6 + 2.2233*x**5 - 2.4225*x**4 + 0.6156*x**3 + 0.0264*x**2 + 1.2337*x - 0.0002
                 
                 K_ty_relation = P_ty - K_ty * A_br * F_ty 
-                C11 = nsolve(K_ty_relation, C_1, (2, ))
+                C11 = nsolve(K_ty_relation, C_1, (K, ))
                 
-                if  C11 > C1[i] and C11 > 1.05:     #we want W/D to differ by at least 5 percent
-                    print('True')
+                if  C11 > C1[i] and (C11*D) > 0.002:     #we want W/D to differ at least 2 mm
                     Volume = np.pi*((C11*D)**2-D**2)*C2[i]*D
                     volume = np.append(volume, [[round(Volume*100000,4), round(C11*D, 4), round(C2[i]*D,4), D, round(C1[i]*D,3)]], axis = 0)
-            
-    D = D + 0.0001
+    D = D + step
 
+
+volume = np.delete(volume, 0, axis=0) #delete initial values
 index = np.where(volume[:,0] == (min(volume[:,0])))
 print(volume[index,:])
+
+plt.plot(range(0,len(volume[:,0]),1),volume[:,3] , 'o',  markersize=1, color='blue', label='D'); #D values
+plt.plot(range(0,len(volume[:,0]),1),volume[:,1] , 'o',  markersize=1, color='green', label='W'); #W values
+#create different t/D lines 
+cm_subsection = np.linspace(0.0, 1.0, len(C2)) 
+colors = [ cm.jet(x) for x in cm_subsection ]
+for i, color in enumerate(colors):
+    plt.plot(np.arange(0,len(volume[:,0]),1),C2[i]*volume[:,3], color=color, label=f't/D = {C2[i]}')
+    
+plt.plot(range(0,len(volume[:,0]),1),volume[:,2] , 'x', markersize=3, color='red', label='t'); #actual t values
+
+plt.xlabel('iterations')
+plt.ylabel('size [m]')
+plt.legend(bbox_to_anchor=(1, 1))
+plt.show()  
