@@ -57,7 +57,7 @@ while D < 0.04:
                 K_ty_relation = P_ty - K_ty * A_br * F_ty 
                 C11 = nsolve(K_ty_relation, C_1, (K, ))
                 
-                if  C11 > C1[i] and (C11*D) > 0.002:     #we want W/D to differ at least 2 mm
+                if  C11 > C1[i] and (C11-1)*D > 0.002:     #we want W/D to differ at least 2 mm
                     Volume = np.pi*((C11*D)**2-D**2)*C2[i]*D
                     volume = np.append(volume, [[round(Volume*100000,4), round(C11*D, 4), round(C2[i]*D,4), D, round(C1[i]*D,3)]], axis = 0)
     D = D + step
