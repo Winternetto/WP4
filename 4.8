@@ -1,0 +1,43 @@
+bstress=[662,441,524,] #compile list of strengths for each possible material
+Fx_t=614.496457 #define loads
+Fz_t=1841.580997
+h=0.033
+t2=0.002
+t3=0.003
+nf=4 #only in even numbers (symmetric)
+w=0.015
+
+def d2calc(nf,w): #calculate d2 with equation w=d2(1.5*nf+1)
+    d2 = w/(1.5*nf+1)
+    spacing = 3*d2
+    e1 = 1.5*d2
+    e2 = e1
+    return d2
+
+def forceinplane(Fx_t,Fz_t,nf): #calculating the loads for each fastener, there is no moment load because its symmetric (we can include in the future to be more precise)
+    Fx=Fx_t/nf
+    Fz=Fz_t/nf
+
+    P=Fx+Fz
+    return P
+
+def masscalc()
+
+
+P=forceinplane(Fx_t,Fz_t,nf)
+d2=d2calc(nf,w)
+
+t2_l=[] # to compile the possible t2 values for each material
+t3_l=[] # to compile the possible t3 values for each material
+
+for stress in bstress:
+    while stress<(P/(t2*d2)):
+        t2+=0.0001
+    t2_l.append(t2)
+    t2=0.001 #return back to the OG thickness
+
+for stress in bstress:
+    while stress<(P/(t3*d2)):
+        t3+=0.0001
+    t3_l.append(t2)
+    t3=0.003 #return back to the OG thickness
